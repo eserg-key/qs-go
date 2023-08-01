@@ -1,0 +1,26 @@
+app:
+  name: handbooks
+  version: 1.0.0
+
+http:
+  port: 8000
+  read-timeout: 5s
+  write-timeout: 5s
+
+logger:
+  log_level: debug
+
+postgres:
+  username: postgres
+  password: 123456
+  host: localhost
+  port: 5432
+  database: db_handbook
+  max-attempts: 5
+  max-delay: 3s
+
+redis:
+  host: 'localhost'
+  port: 6379
+  db: 0
+  password: ''

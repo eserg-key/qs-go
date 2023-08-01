@@ -1,0 +1,84 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  TAG_LATEST: $CI_REGISTRY_IMAGE:latest
+  TAG_COMMIT: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  DEPLOY_SERVER: none
+  DEPLOY_USER: none
+  ENV_NAME: none
+  ENV_URL: none
+
+build_image:
+  only:
+    refs:
+      - main
+      - dev
+  stage: build
+  image: docker:20-dind
+  services:
+    - docker:20-dind
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull $TAG_LATEST || true
+    - docker build --rm
+      --file Dockerfile
+      --cache-from $TAG_LATEST
+      --tag $TAG_LATEST
+      --tag $TAG_COMMIT
+      .
+    - docker push $TAG_LATEST
+    - docker push $TAG_COMMIT
+
+.deploy:
+  image: alpine:latest
+  stage: deploy
+  before_script:
+    - apk update && apk add openssh-client
+    - eval $(ssh-agent -s)
+    - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan ${DEPLOY_SERVER} >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_SERVER "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_SERVER "docker pull $TAG_COMMIT"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_SERVER "HANDBOOK_IMAGE=$TAG_COMMIT docker compose --file $DEPLOY_FILE up -d $DEPLOY_SERVICE"
+  environment:
+    name: $ENV_NAME
+    url: $ENV_URL
+
+deploy-prod:
+  extends: .deploy
+  stage: deploy
+  variables:
+    DEPLOY_SERVER: $PROD_SERVER_IP
+    DEPLOY_USER: $PROD_SERVER_USER
+    ENV_NAME: "prod-mrm-handbook"
+    ENV_URL: "https://profil.mrm.lol/"
+    DEPLOY_FILE: "/deploy/handbook/prod/docker-compose.yml"
+    DEPLOY_SERVICE: "handbook_app"
+  rules: # override this
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+
+deploy-prod-dev:
+  extends: .deploy
+  stage: deploy
+  variables:
+    DEPLOY_SERVER: $PROD_SERVER_IP
+    DEPLOY_USER: $PROD_SERVER_USER
+    ENV_NAME: "prod-mrm-handbook-test"
+    ENV_URL: "https://tprofil.mrm.lol/"
+    DEPLOY_FILE: "/deploy/handbook/dev/docker-compose.yml"
+    DEPLOY_SERVICE: "handbook_app_test"
+  rules: # override this
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+
