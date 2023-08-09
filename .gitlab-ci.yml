@@ -60,9 +60,9 @@ deploy-prod:
   variables:
     DEPLOY_SERVER: $PROD_SERVER_IP
     DEPLOY_USER: $PROD_SERVER_USER
-    ENV_NAME: "prod-mrm-handbook"
-    ENV_URL: "https://profil.mrm.lol/"
-    DEPLOY_FILE: "/deploy/handbook/prod/docker-compose.yml"
+    ENV_NAME: "prod-handbook"
+    ENV_URL: "домен"
+    DEPLOY_FILE: "путь на сервер на yml"
     DEPLOY_SERVICE: "handbook_app"
   rules: # override this
     - if: $CI_COMMIT_BRANCH
@@ -74,9 +74,9 @@ deploy-prod-dev:
   variables:
     DEPLOY_SERVER: $PROD_SERVER_IP
     DEPLOY_USER: $PROD_SERVER_USER
-    ENV_NAME: "prod-mrm-handbook-test"
-    ENV_URL: "https://tprofil.mrm.lol/"
-    DEPLOY_FILE: "/deploy/handbook/dev/docker-compose.yml"
+    ENV_NAME: "prod-handbook-test"
+    ENV_URL: "домен"
+    DEPLOY_FILE: "путь на сервер на yml"
     DEPLOY_SERVICE: "handbook_app_test"
   rules: # override this
     - if: $CI_COMMIT_BRANCH

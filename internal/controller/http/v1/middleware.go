@@ -26,7 +26,7 @@ func (h *Handler) userIdentity(ctx *gin.Context) {
 
 	client := &http.Client{}
 	req, _ := http.NewRequest(
-		"GET", "https://profile.mrm-etagi.com/api/permissions", nil,
+		"GET", "url", nil,
 	)
 	// добавляем заголовки
 	req.Header.Add("Authorization", "Bearer "+headerParts[1])
